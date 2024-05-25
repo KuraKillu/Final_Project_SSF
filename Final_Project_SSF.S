@@ -4,8 +4,9 @@
 .global main
 ;========================================================================
 main:
-    LDI   R17, 0xFF
-    OUT   DDRB, R17     ;set port B for o/p
+    SBI DDRB, 5
+    SBI DDRB, 4
+    
 agn:RCALL delay_2s      ;wait 2s for DHT11 to get ready
 ;========================================================================
 DHT11:
@@ -20,15 +21,21 @@ w2: SBIS  PINB, 5
 w3: SBIC  PINB, 5
     RJMP  w3            ;wait for DHT11 low pulse
 ;-----------------------------------------------------------------
-    RCALL DHT11_reading
+    RCALL DHT11_reading ;read humidity (1st byte of 40-bit data)
+    MOV   R19, R18
     RCALL DHT11_reading
     RCALL DHT11_reading ;read temp (3rd byte of 40-bit data)
 ;-----------------------------------------------------------------
-    OUT   PORTD, R19    ;o/p temp byte to port C
-    RJMP  agn           ;go back & get another sensor reading
+    CPI   R18, 0x19     ;Compare DHT11 temp is 25 or not
+    BREQ  FanOn         ; Branch if Equal or Greater
+    CBI PORTB, 4
+    RJMP  agn            ;go back & get another sensor reading
 ;========================================================================
+FanOn: 
+    SBI PORTB, 4
+    RET
 DHT11_reading:
-    LDI   R17, 8        ;set counter for receiving 8 bits
+    LDI   R17, 16       ;set counter for receiving 8 bits temp binary
     CLR   R18           ;clear data register
 ;-----------------------------------------------------------------
 w4: SBIS  PINB, 1
