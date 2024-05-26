@@ -30,16 +30,16 @@ w3: SBIC  PINB, 5
     LDI   R21, 0x19
     CP    R18, R21      ;Compare DHT11 temp is 25 or not
     BRSH FanOn          ;Branch if Same or Higher (Unsigned)
-    JMP FanOff
+    JMP FanOff          ;If less than 25, turn off the fan
     RJMP  agn           ;go back & get another sensor reading
 ;========================================================================
 FanOn: 
     SBI PORTB, 4
-    RET
+    RJMP agn
 ;-----------------------------------------------------------------
 FanOff:
     CBI PORTB, 4
-    RET
+    RJMP agn
 ;========================================================================
 DHT11_reading:
     LDI   R17, 8       ;set counter for receiving 8 bits temp integer
