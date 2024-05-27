@@ -47,7 +47,7 @@ lplh:SBI   PORTB, 4         ; Set PB4 high to turn on fan
     RJMP agn                ; Repeat loop
 
 ;-----------------------------------------------------------------
-FanOff:
+FanOff: 
     CBI PORTB, 4            ; Turn off fan by setting PB4 low
     RJMP agn                ; Repeat loop
 ;========================================================================
