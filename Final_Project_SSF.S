@@ -23,9 +23,6 @@ w3: SBIC  PINB, 5
     RJMP  w3            ;wait for DHT11 low pulse
 ;-----------------------------------------------------------------
     RCALL DHT11_reading
-    MOV   R19, R18
-    RCALL DHT11_reading
-    RCALL DHT11_reading ;read temp (3rd byte of 40-bit data)
 ;-----------------------------------------------------------------
     LDI   R21, 0x19
     CP    R18, R21      ;Compare DHT11 temp is 25 or not
@@ -42,7 +39,7 @@ FanOff:
     RJMP agn
 ;========================================================================
 DHT11_reading:
-    LDI   R17, 8       ;set counter for receiving 8 bits temp integer
+    LDI   R17, 24       ;set counter for receiving 8 bits temp integer
     CLR   R18           ;clear data register
 ;-----------------------------------------------------------------
 w4: SBIS  PINB, 5
