@@ -59,56 +59,63 @@ FanOff:
     RJMP agn                ; Repeat loop
 ;========================================================================
 printval:
-    MOV R16, R18
-    RCALL ASCII_MSD
-    RCALL LCD_buffer
-    STS UDR0, R16
-    RCALL ASCII_LSD
-    RCALL LCD_buffer
-    STS UDR0, R16
-    RCALL newline
-    RET
+    MOV R16, R18            ; Move temperature value to R16
+    RCALL ASCII_MSD         ; Convert most significant digit to ASCII
+    RCALL LCD_buffer        ; Send to buffer
+    STS UDR0, R16           ; Send over USART
+    RCALL ASCII_LSD         ; Convert least significant digit to ASCII
+    RCALL LCD_buffer        ; Send to buffer
+    STS UDR0, R16           ; Send over USART
+    RCALL newline           ; Send newline characters
+    RET                     ; Return from subroutine
 ;========================================================================
 newline:
-    RCALL LCD_buffer
-    LDI R16, 0x0A
-    STS UDR0, R16
+    RCALL LCD_buffer        ; Send to buffer
+    LDI R16, 0x0A           ; Load newline character (LF)
+    STS UDR0, R16           ; Send over USART
+
 ;========================================================================
-    RCALL LCD_buffer
-    LDI R16, 0x0D
-    STS UDR0, R16
-    RET
+
+    RCALL LCD_buffer        ; Send to buffer
+    LDI R16, 0x0D           ; Load carriage return character (CR)
+    STS UDR0, R16           ; Send over USART
+    RET                     ; Return from subroutine
+
 ;========================================================================
 LCD_buffer:
-    LDS R27, UCSR0A
-    SBRS R27, UDRE0
-    RJMP LCD_buffer
-    RET
+    LDS R27, UCSR0A         ; Load UCSR0A into R27
+    SBRS R27, UDRE0         ; Skip if UDRE0 bit is set (buffer ready)
+    RJMP LCD_buffer         ; Wait until buffer is ready
+    RET                     ; Return from subroutine
+
 ;========================================================================
 ASCII_MSD:
-    MOV R23, R16
-    ANDI R16, 0xF0
-    SWAP R16
-    SUBI R16, -48
-    MOV R28, R16
-    SUBI R28, 58
-    BRPL A_F_D1
-    MSD_RET:RET
+    MOV R23, R16            ; Copy R16 to R23
+    ANDI R16, 0xF0          ; Mask lower nibble
+    SWAP R16                ; Swap nibbles
+    SUBI R16, -48           ; Convert to ASCII
+    MOV R28, R16            ; Move result to R28
+    SUBI R28, 58            ; Check if above '9'
+    BRPL A_F_D1             ; Branch if so (adjust for letters)
+MSD_RET:
+    RET                     ; Return from subroutine
 A_F_D1:
-    SUBI R16, -7
-    RJMP MSD_RET
+    SUBI R16, -7            ; Adjust for letters (A-F)
+    RJMP MSD_RET            ; Jump to return
+    
 ;========================================================================
-ASCII_LSD:
-    MOV R16, R23
-    ANDI R16, 0x0F
-    SUBI R16, -48
-    MOV R28, R16
-    SUBI R28, 58
-    BRPL A_F_D0
-    LSD_RET:RET
+    ASCII_LSD:
+    MOV R16, R23            ; Copy R23 back to R16
+    ANDI R16, 0x0F          ; Mask upper nibble
+    SUBI R16, -48           ; Convert to ASCII
+    MOV R28, R16            ; Move result to R28
+    SUBI R28, 58            ; Check if above '9'
+    BRPL A_F_D0             ; Branch if so (adjust for letters)
+LSD_RET:
+    RET                     ; Return from subroutine
 A_F_D0:
-    SUBI R16, -7
-    RJMP LSD_RET
+    SUBI R16, -7            ; Adjust for letters (A-F)
+    RJMP LSD_RET            ; Jump to return
 ;========================================================================
 DHT11_reading:
     LDI   R17, 24           ; Set counter for receiving 8 bits
