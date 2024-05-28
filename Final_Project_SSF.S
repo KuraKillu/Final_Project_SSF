@@ -7,6 +7,15 @@
 main:
     LDI R17, 0xFF           ; Load 0xFF into register R17
     OUT DDRB, R17           ; Set all pins on PORTB as outputs
+    ; USART Initialization
+    LDI R16, 0x00           ; High byte of UBRR0 for 9600 baud with F_CPU = 16MHz
+    STS UBRR0H, R16
+    LDI R16, 0x67           ; Low byte of UBRR0 for 9600 baud with F_CPU = 16MHz
+    STS UBRR0L, R16
+    LDI R16, (1<<TXEN0)     ; Enable USART transmitter
+    STS UCSR0B, R16
+    LDI R16, (1<<UCSZ01)|(1<<UCSZ00) ; Set frame format: 8 data bits, no parity, 1 stop bit
+    STS UCSR0C, R16
 agn:RCALL delay_2s          ; Wait 2s for DHT11 to get ready
 ;========================================================================
 DHT11:
@@ -23,16 +32,15 @@ w3: SBIC  PINB, 5
     RJMP  w3                ; Wait for DHT11 low pulse
 ;-----------------------------------------------------------------
     RCALL DHT11_reading     ; Call subroutine to read DHT11 data
+    RCALL printval
 ;-----------------------------------------------------------------
-
     CPI R18, 25             ; Compare DHT11 temp to 25
     BRLO FanOff             ; Branch if temperature < 25
     CPI R18, 25
     BRGE FanLow             ; Branch if temperature >= 25
-    CPI R18, 28
+    CPI R18, 30
     BRGE FanHigh            ; Branch if temperature >= 28
     RJMP  agn               ; Repeat loop
-
 ;========================================================================
 FanHigh: 
     LDI   R20, 255          ; Load 255 into R20 for high fan speed
@@ -45,11 +53,62 @@ lplh:SBI   PORTB, 4         ; Set PB4 high to turn on fan
     RCALL delay_20ms        ; Call 20ms delay
     DEC   R20               ; Decrement R20
     RJMP agn                ; Repeat loop
-
 ;-----------------------------------------------------------------
 FanOff: 
     CBI PORTB, 4            ; Turn off fan by setting PB4 low
     RJMP agn                ; Repeat loop
+;========================================================================
+printval:
+    MOV R16, R18
+    RCALL ASCII_MSD
+    RCALL LCD_buffer
+    STS UDR0, R16
+    RCALL ASCII_LSD
+    RCALL LCD_buffer
+    STS UDR0, R16
+    RCALL newline
+    RET
+;========================================================================
+newline:
+    RCALL LCD_buffer
+    LDI R16, 0x0A
+    STS UDR0, R16
+;========================================================================
+    RCALL LCD_buffer
+    LDI R16, 0x0D
+    STS UDR0, R16
+    RET
+;========================================================================
+LCD_buffer:
+    LDS R27, UCSR0A
+    SBRS R27, UDRE0
+    RJMP LCD_buffer
+    RET
+;========================================================================
+ASCII_MSD:
+    MOV R23, R16
+    ANDI R16, 0xF0
+    SWAP R16
+    SUBI R16, -48
+    MOV R28, R16
+    SUBI R28, 58
+    BRPL A_F_D1
+    MSD_RET:RET
+A_F_D1:
+    SUBI R16, -7
+    RJMP MSD_RET
+;========================================================================
+ASCII_LSD:
+    MOV R16, R23
+    ANDI R16, 0x0F
+    SUBI R16, -48
+    MOV R28, R16
+    SUBI R28, 58
+    BRPL A_F_D0
+    LSD_RET:RET
+A_F_D0:
+    SUBI R16, -7
+    RJMP LSD_RET
 ;========================================================================
 DHT11_reading:
     LDI   R17, 24           ; Set counter for receiving 8 bits
@@ -72,6 +131,7 @@ w5: SBIC  PINB, 5
     DEC   R17               ; Decrement counter
     BRNE  w4                ; Repeat until all bits received
     RET                     ; Return from subroutine
+
 ;===============================================================
 ;delay subroutines
 ;===============================================================
