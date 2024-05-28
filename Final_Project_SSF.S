@@ -39,7 +39,7 @@ w3: SBIC  PINB, 5
     CPI R18, 25
     BRGE FanLow             ; Branch if temperature >= 25
     CPI R18, 30
-    BRGE FanHigh            ; Branch if temperature >= 28
+    BRGE FanHigh            ; Branch if temperature >= 30
     RJMP  agn               ; Repeat loop
 ;========================================================================
 FanHigh: 
