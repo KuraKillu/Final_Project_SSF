@@ -43,16 +43,18 @@ w3: SBIC  PINB, 5
     RJMP  agn               ; Repeat loop
 ;========================================================================
 FanHigh: 
-    LDI   R20, 255          ; Load 255 into R20 for high fan speed
+    LDI   R20, 0xFF         ; 100% into R20 for high fan speed
+    RJMP lplh               ; 
 ;-----------------------------------------------------------------
 FanLow: 
-    LDI   R20, 100          ; Load 100 into R20 for low fan speed
-lplh:SBI   PORTB, 4         ; Set PB4 high to turn on fan
-    RCALL delay_2s          ; Call 2s delay
-    CBI   PORTB, 4          ; Set PB4 low to turn off fan
-    RCALL delay_20ms        ; Call 20ms delay
-    DEC   R20               ; Decrement R20
-    RJMP agn                ; Repeat loop
+    LDI   R20, 0x80         ; 50% into R20 for low fan speed
+lplh:SBI   PORTB, 4          ; Set PB4 high to turn on fan
+     RCALL delay_20ms        ; Call 20ms delay
+     CBI   PORTB, 4          ; Set PB4 low to turn off fan
+     RCALL delay_20ms        ; Call 20ms delay
+     DEC   R20               ; Decrement R20
+     BRNE  lplh              ; Repeat loop
+     RJMP agn                ; Repeat loop
 ;-----------------------------------------------------------------
 FanOff: 
     CBI PORTB, 4            ; Turn off fan by setting PB4 low
@@ -73,21 +75,17 @@ newline:
     RCALL LCD_buffer        ; Send to buffer
     LDI R16, 0x0A           ; Load newline character (LF)
     STS UDR0, R16           ; Send over USART
-
 ;========================================================================
-
     RCALL LCD_buffer        ; Send to buffer
     LDI R16, 0x0D           ; Load carriage return character (CR)
     STS UDR0, R16           ; Send over USART
     RET                     ; Return from subroutine
-
 ;========================================================================
 LCD_buffer:
     LDS R27, UCSR0A         ; Load UCSR0A into R27
     SBRS R27, UDRE0         ; Skip if UDRE0 bit is set (buffer ready)
     RJMP LCD_buffer         ; Wait until buffer is ready
     RET                     ; Return from subroutine
-
 ;========================================================================
 ASCII_MSD:
     MOV R23, R16            ; Copy R16 to R23
@@ -102,9 +100,8 @@ MSD_RET:
 A_F_D1:
     SUBI R16, -7            ; Adjust for letters (A-F)
     RJMP MSD_RET            ; Jump to return
-    
 ;========================================================================
-    ASCII_LSD:
+ASCII_LSD:
     MOV R16, R23            ; Copy R23 back to R16
     ANDI R16, 0x0F          ; Mask upper nibble
     SUBI R16, -48           ; Convert to ASCII
@@ -138,7 +135,6 @@ w5: SBIC  PINB, 5
     DEC   R17               ; Decrement counter
     BRNE  w4                ; Repeat until all bits received
     RET                     ; Return from subroutine
-
 ;===============================================================
 ;delay subroutines
 ;===============================================================
